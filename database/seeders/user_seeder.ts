@@ -29,12 +29,12 @@ export default class extends BaseSeeder {
 
     const admin = await User.firstOrCreate(
       { email: 'admin@belibayar.id' },
-      { email: 'admin@belibayar.id', password: 'password' }
+      { email: 'admin@belibayar.id', fullName: 'Administrator', password: 'password' }
     )
 
     const normalUser = await User.firstOrCreate(
       { email: 'user@belibayar.id' },
-      { email: 'user@belibayar.id', password: 'password' }
+      { email: 'user@belibayar.id', fullName: 'User', password: 'password' }
     )
 
     // Attach roles to users (avoid duplicates)

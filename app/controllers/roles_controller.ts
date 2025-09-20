@@ -3,6 +3,7 @@ import Role from '#models/role'
 import AuditService from '#services/audit_service'
 import { normalizePaginator, parseListParams } from '#utils/listing'
 import { computeChangedFields } from '#utils/diff'
+import { getEffectivePermissionSlugs } from '#utils/permissions'
 import { createRoleValidator, updateRoleValidator } from '#validators/role'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -41,6 +42,13 @@ export default class RolesController {
     const role = await Role.create({ name: payload.name, slug: payload.slug })
 
     if (Array.isArray(payload.permissions) && payload.permissions.length > 0) {
+      const actor = ctx.auth.getUserOrFail()
+      const allowed = await getEffectivePermissionSlugs(actor)
+      const disallowed = payload.permissions.filter((s) => !allowed.has(s))
+      if (disallowed.length > 0) {
+        return ctx.response.fail('You cannot grant permissions you do not possess', { disallowed }, 403)
+      }
+
       const perms = await Permission.query().whereIn('slug', payload.permissions)
       await role.related('permissions').sync(perms.map((p) => p.id))
     }
@@ -80,6 +88,13 @@ export default class RolesController {
     await role.save()
 
     if (Array.isArray(payload.permissions)) {
+      const actor = ctx.auth.getUserOrFail()
+      const allowed = await getEffectivePermissionSlugs(actor)
+      const disallowed = payload.permissions.filter((s) => !allowed.has(s))
+      if (disallowed.length > 0) {
+        return ctx.response.fail('You cannot grant permissions you do not possess', { disallowed }, 403)
+      }
+
       const perms = await Permission.query().whereIn('slug', payload.permissions)
       await role.related('permissions').sync(perms.map((p) => p.id))
     }

@@ -1,6 +1,7 @@
 import Permission from '#models/permission'
 import User from '#models/user'
 import AuditService from '#services/audit_service'
+import { getEffectivePermissionSlugs } from '#utils/permissions'
 import { permissionsArrayValidator } from '#validators/user_permissions'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -15,6 +16,13 @@ export default class UserPermissionsController {
     const { params, request, response } = ctx
     const user = await User.findOrFail(params.id)
     const { permissions } = await request.validateUsing(permissionsArrayValidator)
+
+    const actor = ctx.auth.getUserOrFail()
+    const allowed = await getEffectivePermissionSlugs(actor)
+    const disallowed = permissions.filter((s) => !allowed.has(s))
+    if (disallowed.length > 0) {
+      return response.fail('You cannot grant permissions you do not possess', { disallowed }, 403)
+    }
 
     const perms = await Permission.query().whereIn('slug', permissions)
     const foundSlugs = new Set(perms.map((p) => p.slug))
@@ -45,6 +53,13 @@ export default class UserPermissionsController {
     const { params, request, response } = ctx
     const user = await User.findOrFail(params.id)
     const { permissions } = await request.validateUsing(permissionsArrayValidator)
+
+    const actor = ctx.auth.getUserOrFail()
+    const allowed = await getEffectivePermissionSlugs(actor)
+    const disallowed = permissions.filter((s) => !allowed.has(s))
+    if (disallowed.length > 0) {
+      return response.fail('You cannot grant permissions you do not possess', { disallowed }, 403)
+    }
 
     const perms = await Permission.query().whereIn('slug', permissions)
     const foundSlugs = new Set(perms.map((p) => p.slug))

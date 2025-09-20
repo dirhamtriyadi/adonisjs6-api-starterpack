@@ -1,7 +1,7 @@
 import User from '#models/user'
 import AuditService from '#services/audit_service'
-import { normalizePaginator, parseListParams } from '#utils/listing'
 import { computeChangedFields } from '#utils/diff'
+import { normalizePaginator, parseListParams } from '#utils/listing'
 import { createUserValidator, updateUserValidator } from '#validators/user'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -39,6 +39,7 @@ export default class UsersController {
     const user = await User.create({ fullName: payload.fullName ?? null, email: payload.email, password: payload.password })
 
     if (Array.isArray(payload.permissions) && payload.permissions.length > 0) {
+      //  lazy-load (memuat model Permission hanya saat diperlukan) 
       const Permission = (await import('#models/permission')).default
       const perms = await Permission.query().whereIn('slug', payload.permissions)
       await user.related('permissions').sync(perms.map((p) => p.id))
@@ -81,6 +82,7 @@ export default class UsersController {
 
     const payloadPermissions = payload.permissions
     if (Array.isArray(payloadPermissions)) {
+      // lazy-load (memuat model Permission hanya saat diperlukan) 
       const Permission = (await import('#models/permission')).default
       const perms = await Permission.query().whereIn('slug', payloadPermissions)
       await user.related('permissions').sync(perms.map((p) => p.id))

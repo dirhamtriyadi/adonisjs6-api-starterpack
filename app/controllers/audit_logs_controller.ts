@@ -54,12 +54,11 @@ export default class AuditLogsController {
       .if(!!actorEmail, (qb) => qb.whereILike('actor_email', `%${actorEmail!}%`))
 
     const paginator = await q.orderBy(sortColumn, orderBy).paginate(page, limit)
-    return response.success('audit_logs.list', normalizePaginator(paginator))
+    return response.success('Audit logs fetched successfully', normalizePaginator(paginator))
   }
 
   async show({ params, response }: HttpContext) {
     const log = await AuditLog.findOrFail(params.id)
-    return response.success('audit_logs.read', log)
+    return response.success('Audit log fetched successfully', log)
   }
 }
-

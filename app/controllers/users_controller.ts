@@ -24,12 +24,12 @@ export default class UsersController {
       .orderBy(sortColumn, orderBy)
       .paginate(page, limit)
 
-    return response.success('users.list', normalizePaginator(paginator))
+    return response.success('Users fetched successfully', normalizePaginator(paginator))
   }
 
   async show({ params, response }: HttpContext) {
     const user = await User.findOrFail(params.id)
-    return response.success('users.read', user)
+    return response.success('User fetched successfully', user)
   }
 
   async store(ctx: HttpContext) {
@@ -53,7 +53,7 @@ export default class UsersController {
       context: { controller: 'UsersController', action: 'store' },
     })
 
-    return response.success('users.create', user, 201)
+    return response.success('User created successfully', user, 201)
   }
 
   async update(ctx: HttpContext) {
@@ -100,7 +100,7 @@ export default class UsersController {
       context: { controller: 'UsersController', action: 'update', changedFields },
     })
 
-    return response.success('users.update', user)
+    return response.success('User updated successfully', user)
   }
 
   async destroy(ctx: HttpContext) {
@@ -117,6 +117,6 @@ export default class UsersController {
       context: { controller: 'UsersController', action: 'destroy' },
     })
 
-    return response.success('users.delete', user)
+    return response.success('User deleted successfully', user)
   }
 } 

@@ -8,7 +8,7 @@ export default class UserPermissionsController {
   async index({ params, response }: HttpContext) {
     const user = await User.findOrFail(params.id)
     await user.load('permissions')
-    return response.success('users.permissions.list', user.permissions)
+    return response.success("User permissions fetched successfully", user.permissions)
   }
 
   async attach(ctx: HttpContext) {
@@ -20,7 +20,7 @@ export default class UserPermissionsController {
     const foundSlugs = new Set(perms.map((p) => p.slug))
     const missing = permissions.filter((s) => !foundSlugs.has(s))
     if (missing.length > 0) {
-      return response.fail('Some permissions not found', { missing }, 422)
+      return response.fail('Some permissions were not found', { missing }, 422)
     }
 
     await user.load('permissions')
@@ -38,7 +38,7 @@ export default class UserPermissionsController {
       context: { controller: 'UserPermissionsController', action: 'attach' },
     })
 
-    return response.success('users.permissions.attach', { permissions: after })
+    return response.success('Permissions attached successfully', { permissions: after })
   }
 
   async sync(ctx: HttpContext) {
@@ -50,7 +50,7 @@ export default class UserPermissionsController {
     const foundSlugs = new Set(perms.map((p) => p.slug))
     const missing = permissions.filter((s) => !foundSlugs.has(s))
     if (missing.length > 0) {
-      return response.fail('Some permissions not found', { missing }, 422)
+      return response.fail('Some permissions were not found', { missing }, 422)
     }
 
     await user.load('permissions')
@@ -68,7 +68,7 @@ export default class UserPermissionsController {
       context: { controller: 'UserPermissionsController', action: 'sync' },
     })
 
-    return response.success('users.permissions.sync', { permissions: after })
+    return response.success('Permissions synced successfully', { permissions: after })
   }
 
   async detach(ctx: HttpContext) {
@@ -80,7 +80,7 @@ export default class UserPermissionsController {
     const foundSlugs = new Set(perms.map((p) => p.slug))
     const missing = permissions.filter((s) => !foundSlugs.has(s))
     if (missing.length > 0) {
-      return response.fail('Some permissions not found', { missing }, 422)
+      return response.fail('Some permissions were not found', { missing }, 422)
     }
 
     await user.load('permissions')
@@ -98,7 +98,6 @@ export default class UserPermissionsController {
       context: { controller: 'UserPermissionsController', action: 'detach' },
     })
 
-    return response.success('users.permissions.detach', { permissions: after })
+    return response.success('Permissions detached successfully', { permissions: after })
   }
 }
-

@@ -20,7 +20,7 @@ export default class AuthController {
       actor: user,
     })
 
-    return response.success('registered', { id: user.id, email: user.email, fullName: user.fullName }, 201)
+    return response.success('User registered successfully', { id: user.id, email: user.email, fullName: user.fullName }, 201)
   }
 
   async login(ctx: HttpContext) {
@@ -29,12 +29,12 @@ export default class AuthController {
 
     const user = await User.findBy('email', email)
     if (!user) {
-      return response.fail('invalid credentials', undefined, 401)
+      return response.fail('Invalid credentials', undefined, 401)
     }
 
     const valid = await hash.verify(user.password, password)
     if (!valid) {
-      return response.fail('invalid credentials', undefined, 401)
+      return response.fail('Invalid credentials', undefined, 401)
     }
 
     const token = await User.accessTokens.create(user)
@@ -48,7 +48,7 @@ export default class AuthController {
       actor: user, // Tambahkan actor yang sudah ditemukan
     })
 
-    return response.success('authenticated', { token: token.value?.release(), type: token.type, expiresAt: token.expiresAt })
+    return response.success('Authenticated successfully', { token: token.value?.release(), type: token.type, expiresAt: token.expiresAt })
   }
 
   async logout(ctx: HttpContext) {
@@ -65,12 +65,12 @@ export default class AuthController {
       context: { controller: 'AuthController', action: 'logout' },
     })
 
-    return response.success('logged out')
+    return response.success('Logged out successfully')
   }
 
   async me({ auth, response }: HttpContext) {
     await auth.authenticate()
     const user = auth.getUserOrFail()
-    return response.success('me', { id: user.id, email: user.email, fullName: user.fullName })
+    return response.success('Profile fetched successfully', { id: user.id, email: user.email, fullName: user.fullName })
   }
 } 

@@ -26,12 +26,12 @@ export default class RolesController {
       .preload('permissions')
       .paginate(page, limit)
 
-    return response.success('roles.list', normalizePaginator(paginator))
+    return response.success('Roles fetched successfully', normalizePaginator(paginator))
   }
 
   async show({ params, response }: HttpContext) {
     const role = await Role.query().where('id', params.id).preload('permissions').firstOrFail()
-    return response.success('roles.read', role)
+    return response.success('Role fetched successfully', role)
   }
 
   async store(ctx: HttpContext) {
@@ -55,7 +55,7 @@ export default class RolesController {
       context: { controller: 'RolesController', action: 'store' },
     })
 
-    return response.success('roles.create', role, 201)
+    return response.success('Role created successfully', role, 201)
   }
 
   async update(ctx: HttpContext) {
@@ -97,7 +97,7 @@ export default class RolesController {
       context: { controller: 'RolesController', action: 'update', changedFields },
     })
 
-    return response.success('roles.update', role)
+    return response.success('Role updated successfully', role)
   }
 
   async destroy(ctx: HttpContext) {
@@ -117,6 +117,6 @@ export default class RolesController {
       context: { controller: 'RolesController', action: 'destroy' },
     })
 
-    return response.success('roles.delete', { id: role.id })
+    return response.success('Role deleted successfully', { id: role.id })
   }
 } 

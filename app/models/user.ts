@@ -1,4 +1,5 @@
 import Role from '#models/role'
+import Permission from '#models/permission'
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import { compose } from '@adonisjs/core/helpers'
@@ -33,6 +34,15 @@ export default class User extends compose(BaseModel, AuthFinder) {
     pivotRelatedForeignKey: 'role_id',
   })
   declare roles: ManyToMany<typeof Role>
+
+  @manyToMany(() => Permission, {
+    pivotTable: 'permission_user',
+    localKey: 'id',
+    pivotForeignKey: 'user_id',
+    relatedKey: 'id',
+    pivotRelatedForeignKey: 'permission_id',
+  })
+  declare permissions: ManyToMany<typeof Permission>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

@@ -15,8 +15,14 @@ export default class AuthorizeMiddleware {
     await user.load('roles', (rolesQuery) => {
       rolesQuery.preload('permissions')
     })
+    await user.load('permissions')
 
     const userPermissions = new Set<string>()
+    // Direct user permissions
+    for (const perm of user.permissions) {
+      userPermissions.add(perm.slug)
+    }
+    // Permissions derived from roles
     for (const role of user.roles) {
       for (const perm of role.permissions) {
         userPermissions.add(perm.slug)

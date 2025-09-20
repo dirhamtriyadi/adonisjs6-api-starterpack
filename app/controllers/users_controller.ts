@@ -38,6 +38,12 @@ export default class UsersController {
 
     const user = await User.create({ fullName: payload.fullName ?? null, email: payload.email, password: payload.password })
 
+    if (Array.isArray(payload.permissions) && payload.permissions.length > 0) {
+      const Permission = (await import('#models/permission')).default
+      const perms = await Permission.query().whereIn('slug', payload.permissions)
+      await user.related('permissions').sync(perms.map((p) => p.id))
+    }
+
     await AuditService.record(ctx, {
       action: 'create',
       resourceType: 'User',
@@ -72,6 +78,13 @@ export default class UsersController {
     }
 
     await user.save()
+
+    const payloadPermissions = payload.permissions
+    if (Array.isArray(payloadPermissions)) {
+      const Permission = (await import('#models/permission')).default
+      const perms = await Permission.query().whereIn('slug', payloadPermissions)
+      await user.related('permissions').sync(perms.map((p) => p.id))
+    }
     await user.refresh()
     const after = user.serialize()
 

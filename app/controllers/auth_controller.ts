@@ -73,4 +73,5 @@ export default class AuthController {
     const user = auth.getUserOrFail()
     return response.success('Profile fetched successfully', { id: user.id, email: user.email, fullName: user.fullName })
   }
+
 } 

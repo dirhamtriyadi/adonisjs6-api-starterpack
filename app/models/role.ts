@@ -1,10 +1,11 @@
 import Permission from '#models/permission'
 import User from '#models/user'
-import { BaseModel, column, manyToMany } from '@adonisjs/lucid/orm'
+import { column, manyToMany } from '@adonisjs/lucid/orm'
 import type { ManyToMany } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
+import SoftDeletes from './traits/soft_deletes.js'
 
-export default class Role extends BaseModel {
+export default class Role extends SoftDeletes {
   @column({ isPrimary: true })
   declare id: number
 
@@ -37,4 +38,7 @@ export default class Role extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
-} 
+
+  @column.dateTime({ serializeAs: null })
+  declare deletedAt: DateTime | null
+}

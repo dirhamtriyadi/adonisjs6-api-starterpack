@@ -1,9 +1,10 @@
+import Permission from '#models/permission'
 import User from '#models/user'
 import AuditService from '#services/audit_service'
 import { computeChangedFields } from '#utils/diff'
 import { normalizePaginator, parseListParams } from '#utils/listing'
-import Permission from '#models/permission'
 import { getEffectivePermissionSlugs } from '#utils/permissions'
+import { bulkIdsValidator } from '#validators/bulk'
 import { createUserValidator, updateUserValidator } from '#validators/user'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -17,7 +18,11 @@ export default class UsersController {
       mapSortBy: { fullName: 'full_name', createdAt: 'created_at' },
     })
 
+    const trashed = request.input('trashed') as 'only' | 'with' | undefined
+
     const paginator = await User.query()
+      .if(trashed === 'only', (q) => q.apply((scopes) => scopes.onlyTrashed()))
+      .if(trashed === 'with', (q) => q.apply((scopes) => scopes.withTrashed()))
       .if(!!search, (q) => {
         q.where((builder) => {
           builder.whereILike('email', `%${search}%`).orWhereILike('full_name', `%${search}%`)
@@ -29,10 +34,14 @@ export default class UsersController {
     return response.success('Users fetched successfully', normalizePaginator(paginator))
   }
 
-  async show({ params, response }: HttpContext) {
-    const user = await User.findOrFail(params.id)
+  async show({ params, request, response }: HttpContext) {
+    const includeTrashed = request.input('withTrashed') === 'true'
+    const query = User.query().where('id', params.id)
+    if (includeTrashed) query.apply((scopes) => scopes.withTrashed())
+    const user = await query.firstOrFail()
     return response.success('User fetched successfully', user)
   }
+
 
   async store(ctx: HttpContext) {
     const { request, response } = ctx
@@ -117,18 +126,93 @@ export default class UsersController {
 
   async destroy(ctx: HttpContext) {
     const { params, response } = ctx
-    const user = await User.findOrFail(params.id)
+    const user = await User.query().where('id', params.id).firstOrFail()
 
     const before = user.serialize()
-    await user.delete()
+    await user.trash()
     await AuditService.record(ctx, {
-      action: 'delete',
+      action: 'soft_delete',
       resourceType: 'User',
       resourceId: user.id,
       before,
+      after: { deletedAt: user.deletedAt },
       context: { controller: 'UsersController', action: 'destroy' },
     })
 
     return response.success('User deleted successfully', user)
   }
+
+  async restore(ctx: HttpContext) {
+    const { params, response } = ctx
+    const user = await User.query().apply((scopes) => scopes.onlyTrashed()).where('id', params.id).firstOrFail()
+    const before = user.serialize()
+    await user.restore()
+    await AuditService.record(ctx, {
+      action: 'restore',
+      resourceType: 'User',
+      resourceId: user.id,
+      before,
+      after: { deletedAt: user.deletedAt },
+      context: { controller: 'UsersController', action: 'restore' },
+    })
+    return response.success('User restored successfully', user)
+  }
+
+  async forceDelete(ctx: HttpContext) {
+    const { params, response } = ctx
+    const user = await User.query().where('id', params.id).firstOrFail()
+    const before = user.serialize()
+    await user.forceDelete()
+    await AuditService.record(ctx, {
+      action: 'force_delete',
+      resourceType: 'User',
+      resourceId: user.id,
+      before,
+      context: { controller: 'UsersController', action: 'forceDelete' },
+    })
+    return response.success('User permanently deleted successfully', { id: Number(params.id) })
+  }
+
+  async bulkDelete(ctx: HttpContext) {
+    const { request, response } = ctx
+    const { ids } = await request.validateUsing(bulkIdsValidator)
+    const affected = await (User as any).bulkTrash(ids)
+    await AuditService.record(ctx, {
+      action: 'soft_delete_bulk',
+      resourceType: 'User',
+      resourceId: 0,
+      after: { ids, affected },
+      context: { controller: 'UsersController', action: 'bulkDelete' },
+    })
+    return response.success('Users deleted successfully', { affected })
+  }
+
+  async bulkRestore(ctx: HttpContext) {
+    const { request, response } = ctx
+    const { ids } = await request.validateUsing(bulkIdsValidator)
+    const affected = await User.bulkRestore(ids)
+    await AuditService.record(ctx, {
+      action: 'restore_bulk',
+      resourceType: 'User',
+      resourceId: 0,
+      after: { ids, affected },
+      context: { controller: 'UsersController', action: 'bulkRestore' },
+    })
+    return response.success('Users restored successfully', { affected })
+  }
+
+  async bulkForceDelete(ctx: HttpContext) {
+    const { request, response } = ctx
+    const { ids } = await request.validateUsing(bulkIdsValidator)
+    const affected = await User.bulkForceDelete(ids)
+    await AuditService.record(ctx, {
+      action: 'force_delete_bulk',
+      resourceType: 'User',
+      resourceId: 0,
+      after: { ids, affected },
+      context: { controller: 'UsersController', action: 'bulkForceDelete' },
+    })
+    return response.success('Users permanently deleted successfully', { affected })
+  }
+
 } 

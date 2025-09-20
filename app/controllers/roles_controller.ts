@@ -1,9 +1,10 @@
 import Permission from '#models/permission'
 import Role from '#models/role'
 import AuditService from '#services/audit_service'
-import { normalizePaginator, parseListParams } from '#utils/listing'
 import { computeChangedFields } from '#utils/diff'
+import { normalizePaginator, parseListParams } from '#utils/listing'
 import { getEffectivePermissionSlugs } from '#utils/permissions'
+import { bulkIdsValidator } from '#validators/bulk'
 import { createRoleValidator, updateRoleValidator } from '#validators/role'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -17,7 +18,11 @@ export default class RolesController {
       mapSortBy: { createdAt: 'created_at' },
     })
 
+    const trashed = request.input('trashed') as 'only' | 'with' | undefined
+
     const paginator = await Role.query()
+      .if(trashed === 'only', (q) => q.apply((scopes) => scopes.onlyTrashed()))
+      .if(trashed === 'with', (q) => q.apply((scopes) => scopes.withTrashed()))
       .if(!!search, (q) => {
         q.where((builder) => {
           builder.whereILike('name', `%${search}%`).orWhereILike('slug', `%${search}%`)
@@ -30,8 +35,11 @@ export default class RolesController {
     return response.success('Roles fetched successfully', normalizePaginator(paginator))
   }
 
-  async show({ params, response }: HttpContext) {
-    const role = await Role.query().where('id', params.id).preload('permissions').firstOrFail()
+  async show({ params, request, response }: HttpContext) {
+    const includeTrashed = request.input('withTrashed') === 'true'
+    const q = Role.query().where('id', params.id)
+    if (includeTrashed) q.apply((scopes) => scopes.withTrashed())
+    const role = await q.preload('permissions').firstOrFail()
     return response.success('Role fetched successfully', role)
   }
 
@@ -117,21 +125,95 @@ export default class RolesController {
 
   async destroy(ctx: HttpContext) {
     const { params, response } = ctx
-    const role = await Role.findOrFail(params.id)
+    const role = await Role.query().where('id', params.id).firstOrFail()
 
     await role.load('permissions')
     const before = role.serialize()
-
-    await role.delete()
+    await role.trash()
 
     await AuditService.record(ctx, {
-      action: 'delete',
+      action: 'soft_delete',
       resourceType: 'Role',
       resourceId: role.id,
       before,
+      after: { deletedAt: role.deletedAt },
       context: { controller: 'RolesController', action: 'destroy' },
     })
 
     return response.success('Role deleted successfully', { id: role.id })
+  }
+
+  async restore(ctx: HttpContext) {
+    const { params, response } = ctx
+    const role = await Role.query().apply((scopes) => scopes.onlyTrashed()).where('id', params.id).firstOrFail()
+    const before = role.serialize()
+    await role.restore()
+    await AuditService.record(ctx, {
+      action: 'restore',
+      resourceType: 'Role',
+      resourceId: role.id,
+      before,
+      after: { deletedAt: role.deletedAt },
+      context: { controller: 'RolesController', action: 'restore' },
+    })
+    return response.success('Role restored successfully', role)
+  }
+
+  async forceDelete(ctx: HttpContext) {
+    const { params, response } = ctx
+    const role = await Role.query().where('id', params.id).firstOrFail()
+    await role.load('permissions')
+    const before = role.serialize()
+    await role.forceDelete()
+    await AuditService.record(ctx, {
+      action: 'force_delete',
+      resourceType: 'Role',
+      resourceId: role.id,
+      before,
+      context: { controller: 'RolesController', action: 'forceDelete' },
+    })
+    return response.success('Role permanently deleted successfully', { id: role.id })
+  }
+
+  async bulkDelete(ctx: HttpContext) {
+    const { request, response } = ctx
+    const { ids } = await request.validateUsing(bulkIdsValidator)
+    const affected = await (Role as any).bulkTrash(ids)
+    await AuditService.record(ctx, {
+      action: 'soft_delete_bulk',
+      resourceType: 'Role',
+      resourceId: 0,
+      after: { ids, affected },
+      context: { controller: 'RolesController', action: 'bulkDelete' },
+    })
+    return response.success('Roles deleted successfully', { affected })
+  }
+
+  async bulkRestore(ctx: HttpContext) {
+    const { request, response } = ctx
+    const { ids } = await request.validateUsing(bulkIdsValidator)
+    const affected = await Role.bulkRestore(ids)
+    await AuditService.record(ctx, {
+      action: 'restore_bulk',
+      resourceType: 'Role',
+      resourceId: 0,
+      after: { ids, affected },
+      context: { controller: 'RolesController', action: 'bulkRestore' },
+    })
+    return response.success('Roles restored successfully', { affected })
+  }
+
+  async bulkForceDelete(ctx: HttpContext) {
+    const { request, response } = ctx
+    const { ids } = await request.validateUsing(bulkIdsValidator)
+    const affected = await Role.bulkForceDelete(ids)
+    await AuditService.record(ctx, {
+      action: 'force_delete_bulk',
+      resourceType: 'Role',
+      resourceId: 0,
+      after: { ids, affected },
+      context: { controller: 'RolesController', action: 'bulkForceDelete' },
+    })
+    return response.success('Roles permanently deleted successfully', { affected })
   }
 } 

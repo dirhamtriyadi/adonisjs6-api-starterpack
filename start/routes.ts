@@ -42,16 +42,16 @@ router.group(() => {
   // Users - direct permissions management
   router
     .get('/users/:id/permissions', [UserPermissionsController, 'index'])
-    .use([middleware.auth(), middleware.authorize(['users.read'])])
+    .use([middleware.auth(), middleware.authorize(['users.permissions.read'])])
   router
     .post('/users/:id/permissions', [UserPermissionsController, 'attach'])
-    .use([middleware.auth(), middleware.authorize(['users.update'])])
+    .use([middleware.auth(), middleware.authorize(['users.permissions.manage'])])
   router
     .put('/users/:id/permissions', [UserPermissionsController, 'sync'])
-    .use([middleware.auth(), middleware.authorize(['users.update'])])
+    .use([middleware.auth(), middleware.authorize(['users.permissions.manage'])])
   router
     .delete('/users/:id/permissions', [UserPermissionsController, 'detach'])
-    .use([middleware.auth(), middleware.authorize(['users.update'])])
+    .use([middleware.auth(), middleware.authorize(['users.permissions.manage'])])
 
   // Roles
   router

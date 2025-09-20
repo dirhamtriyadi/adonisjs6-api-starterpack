@@ -3,7 +3,7 @@ import { BaseSeeder } from '@adonisjs/lucid/seeders'
 
 export default class extends BaseSeeder {
   async run() {
-    await Permission.createMany([
+    const permissions = [
       // Users
       { name: 'List Users', slug: 'users.list' },
       { name: 'Read User', slug: 'users.read' },
@@ -11,6 +11,10 @@ export default class extends BaseSeeder {
       { name: 'Update User', slug: 'users.update' },
       { name: 'Delete User', slug: 'users.delete' },
       { name: 'Manage Users', slug: 'users.manage' },
+
+      // Users - Direct Permissions Management
+      { name: 'Read User Permissions', slug: 'users.permissions.read' },
+      { name: 'Manage User Permissions', slug: 'users.permissions.manage' },
 
       // Roles and Permissions
       { name: 'List Permissions', slug: 'permissions.list' },
@@ -24,6 +28,10 @@ export default class extends BaseSeeder {
       // Audit Logs
       { name: 'List Audit Logs', slug: 'audit_logs.list' },
       { name: 'Read Audit Log', slug: 'audit_logs.read' },
-    ])
+    ] as const
+
+    for (const p of permissions) {
+      await Permission.firstOrCreate({ slug: p.slug }, p as any)
+    }
   }
 }

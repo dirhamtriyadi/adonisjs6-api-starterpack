@@ -10,6 +10,7 @@
 import AuditLogsController from '#controllers/audit_logs_controller'
 import AuthController from '#controllers/auth_controller'
 import RolesController from '#controllers/roles_controller'
+import UserPermissionsController from '#controllers/user_permissions_controller'
 import UsersController from '#controllers/users_controller'
 import { middleware } from '#start/kernel'
 import router from '@adonisjs/core/services/router'
@@ -37,6 +38,20 @@ router.group(() => {
     .use('store', [middleware.authorize(['users.create'])])
     .use('update', [middleware.authorize(['users.update'])])
     .use('destroy', [middleware.authorize(['users.delete'])])
+
+  // Users - direct permissions management
+  router
+    .get('/users/:id/permissions', [UserPermissionsController, 'index'])
+    .use([middleware.auth(), middleware.authorize(['users.read'])])
+  router
+    .post('/users/:id/permissions', [UserPermissionsController, 'attach'])
+    .use([middleware.auth(), middleware.authorize(['users.update'])])
+  router
+    .put('/users/:id/permissions', [UserPermissionsController, 'sync'])
+    .use([middleware.auth(), middleware.authorize(['users.update'])])
+  router
+    .delete('/users/:id/permissions', [UserPermissionsController, 'detach'])
+    .use([middleware.auth(), middleware.authorize(['users.update'])])
 
   // Roles
   router

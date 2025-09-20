@@ -32,12 +32,18 @@ router.group(() => {
   router
     .resource('users', UsersController)
     .apiOnly()
-    .use('*', [middleware.auth()]) // auth untuk semua aksi
     .use('index', [middleware.authorize(['users.list'])])
     .use('show', [middleware.authorize(['users.read'])])
     .use('store', [middleware.authorize(['users.create'])])
     .use('update', [middleware.authorize(['users.update'])])
     .use('destroy', [middleware.authorize(['users.delete'])])
+
+  // Users - soft delete utilities
+  router.post('/users/:id/restore', [UsersController, 'restore']).use([middleware.auth(), middleware.authorize(['users.restore'])])
+  router.delete('/users/:id/force', [UsersController, 'forceDelete']).use([middleware.auth(), middleware.authorize(['users.force_delete'])])
+  router.post('/users/bulk-delete', [UsersController, 'bulkDelete']).use([middleware.auth(), middleware.authorize(['users.bulk_delete'])])
+  router.post('/users/bulk-restore', [UsersController, 'bulkRestore']).use([middleware.auth(), middleware.authorize(['users.bulk_restore'])])
+  router.post('/users/bulk-force-delete', [UsersController, 'bulkForceDelete']).use([middleware.auth(), middleware.authorize(['users.bulk_force_delete'])])
 
   // Users - direct permissions management
   router
@@ -63,6 +69,13 @@ router.group(() => {
     .use('store', [middleware.authorize(['roles.create'])])
     .use('update', [middleware.authorize(['roles.update'])])
     .use('destroy', [middleware.authorize(['roles.delete'])])
+
+  // Roles - soft delete utilities
+  router.post('/roles/:id/restore', [RolesController, 'restore']).use([middleware.auth(), middleware.authorize(['roles.restore'])])
+  router.delete('/roles/:id/force', [RolesController, 'forceDelete']).use([middleware.auth(), middleware.authorize(['roles.force_delete'])])
+  router.post('/roles/bulk-delete', [RolesController, 'bulkDelete']).use([middleware.auth(), middleware.authorize(['roles.bulk_delete'])])
+  router.post('/roles/bulk-restore', [RolesController, 'bulkRestore']).use([middleware.auth(), middleware.authorize(['roles.bulk_restore'])])
+  router.post('/roles/bulk-force-delete', [RolesController, 'bulkForceDelete']).use([middleware.auth(), middleware.authorize(['roles.bulk_force_delete'])])
 
   // Audit Logs (read-only)
   router

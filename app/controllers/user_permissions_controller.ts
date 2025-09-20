@@ -7,14 +7,14 @@ import type { HttpContext } from '@adonisjs/core/http'
 
 export default class UserPermissionsController {
   async index({ params, response }: HttpContext) {
-    const user = await User.findOrFail(params.id)
+    const user = await User.query().where('id', params.id).whereNull('deleted_at').firstOrFail()
     await user.load('permissions')
     return response.success("User permissions fetched successfully", user.permissions)
   }
 
   async attach(ctx: HttpContext) {
     const { params, request, response } = ctx
-    const user = await User.findOrFail(params.id)
+    const user = await User.query().where('id', params.id).whereNull('deleted_at').firstOrFail()
     const { permissions } = await request.validateUsing(permissionsArrayValidator)
 
     const actor = ctx.auth.getUserOrFail()
@@ -51,7 +51,7 @@ export default class UserPermissionsController {
 
   async sync(ctx: HttpContext) {
     const { params, request, response } = ctx
-    const user = await User.findOrFail(params.id)
+    const user = await User.query().where('id', params.id).whereNull('deleted_at').firstOrFail()
     const { permissions } = await request.validateUsing(permissionsArrayValidator)
 
     const actor = ctx.auth.getUserOrFail()
@@ -88,7 +88,7 @@ export default class UserPermissionsController {
 
   async detach(ctx: HttpContext) {
     const { params, request, response } = ctx
-    const user = await User.findOrFail(params.id)
+    const user = await User.query().where('id', params.id).whereNull('deleted_at').firstOrFail()
     const { permissions } = await request.validateUsing(permissionsArrayValidator)
 
     const perms = await Permission.query().whereIn('slug', permissions)

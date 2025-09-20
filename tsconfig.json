@@ -8,6 +8,24 @@
       "#models/*": [
         "app/models/*.ts"
       ],
+      "#controllers/*": [
+        "app/controllers/*.ts"
+      ],
+      "#services/*": [
+        "app/services/*.ts"
+      ],
+      "#middleware/*": [
+        "app/middleware/*.ts"
+      ],
+      "#validators/*": [
+        "app/validators/*.ts"
+      ],
+      "#exceptions/*": [
+        "app/exceptions/*.ts"
+      ],
+      "#start/*": [
+        "start/*.ts"
+      ],
       "#utils/*": [
         "app/utils/*.ts"
       ]
